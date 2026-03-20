@@ -10,16 +10,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { storage } from "@/lib/storage";
 import { useToast } from "@/components/hooks/use-toast";
-import { useAuth } from "@clerk/clerk-react";
-import { enrollInSession } from "@/lib/api";
+import type { Course } from "@/types";
 
 export default function PaymentPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { sessionId } = useParams();
   const { toast } = useToast();
-  const { getToken } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -27,10 +26,12 @@ export default function PaymentPage() {
   const courseTitle = searchParams.get("courseTitle");
   const mentorId = searchParams.get("mentorId");
   const mentorName = searchParams.get("mentorName");
-  const subjectId = searchParams.get("subjectId");
+  const mentorImg = searchParams.get("mentorImg");
   const sessionDate = date ? new Date(date).toLocaleDateString() : null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  interface FileChangeEvent extends React.ChangeEvent<HTMLInputElement> {}
+
+  const handleFileChange = (e: FileChangeEvent): void => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
@@ -40,20 +41,30 @@ export default function PaymentPage() {
     e: React.FormEvent<HTMLFormElement>,
   ): Promise<void> => {
     e.preventDefault();
-    if (!file || !date || !mentorId || !subjectId || !sessionId) return;
+    if (
+      !file ||
+      !date ||
+      !courseTitle ||
+      !mentorId ||
+      !mentorName ||
+      !mentorImg ||
+      !sessionId
+    )
+      return;
 
     setIsUploading(true);
 
     try {
-      const token = await getToken({ template: "skillmentor-auth" });
-      if (!token) throw new Error("Not authenticated");
+      const newCourse: Course = {
+        id: sessionId,
+        courseTitle: courseTitle,
+        mentorName: mentorName,
+        mentorImageUrl: mentorImg,
+        status: "pending",
+        nextSession: date,
+      };
 
-      await enrollInSession(token, {
-        mentorId: Number(mentorId),
-        subjectId: Number(subjectId),
-        sessionAt: date,
-        durationMinutes: 60,
-      });
+      storage.addEnrolledCourse(newCourse);
 
       toast({
         title: "Payment Confirmed",
@@ -87,9 +98,6 @@ export default function PaymentPage() {
               <div className="text-sm font-medium">
                 Session with: {mentorName}
               </div>
-            )}
-            {courseTitle && (
-              <div className="text-sm text-muted-foreground">{courseTitle}</div>
             )}
             {sessionDate && (
               <div className="text-sm">

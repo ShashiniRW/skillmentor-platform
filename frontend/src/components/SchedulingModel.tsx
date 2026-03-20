@@ -37,11 +37,8 @@ export function SchedulingModal({
   const [selectedTime, setSelectedTime] = useState<string>();
   const navigate = useNavigate();
 
-  const mentorName = `${mentor.firstName} ${mentor.lastName}`;
-  const subject = mentor.subjects[0];
-
   const handleSchedule = () => {
-    if (date && selectedTime && subject) {
+    if (date && selectedTime) {
       const sessionDateTime = new Date(date);
       const [hours, minutes] = selectedTime.split(":");
       sessionDateTime.setHours(
@@ -52,11 +49,10 @@ export function SchedulingModal({
       const sessionId = `${mentor.id}-${Date.now()}`;
       const searchParams = new URLSearchParams({
         date: sessionDateTime.toISOString(),
-        courseTitle: subject?.subjectName ?? "",
-        mentorName: mentorName,
-        mentorId: mentor.mentorId,
-        mentorImg: mentor.profileImageUrl ?? "",
-        subjectId: String(subject?.id ?? ""),
+        courseTitle: mentor.courseTitle,
+        mentorName: mentor.mentorName,
+        mentorId: mentor.id,
+        mentorImg: mentor.mentorImageUrl,
       });
       navigate(`/payment/${sessionId}?${searchParams.toString()}`);
     }
@@ -68,7 +64,8 @@ export function SchedulingModal({
         <DialogHeader className="flex flex-row items-center justify-center space-y-0">
           <DialogTitle>Schedule this session</DialogTitle>
           <DialogDescription className="sr-only">
-            Pick a date and time for your mentoring session with {mentorName}.
+            Pick a date and time for your mentoring session with{" "}
+            {mentor.mentorName}.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -101,7 +98,7 @@ export function SchedulingModal({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSchedule} disabled={!date || !selectedTime || !subject}>
+          <Button onClick={handleSchedule} disabled={!date || !selectedTime}>
             Save
           </Button>
         </div>
